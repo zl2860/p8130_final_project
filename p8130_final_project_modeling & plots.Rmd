@@ -1,0 +1,277 @@
+---
+title: "code_for_model"
+author: "Zongchao Liu"
+date: "12/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(arsenal)
+library(kableExtra)
+library(broom)
+```
+
+
+
+#table 1
+## clean data first
+```{r,include=FALSE}
+data = read_csv("Lawsuit.csv") %>%janitor::clean_names() %>%
+  mutate( dept = factor(dept),
+        gender = factor(gender),
+         clin = factor(clin),
+         cert = factor(cert),
+         rank = factor(rank)) %>%
+  mutate(dept = recode(dept,
+                       `1` = "Biochemistry/Molecular Biology",
+                       `2` = "Physiology",
+                       `3` = "Genetics",
+                       `4` = "rankPediatrics",
+                       `5` = "Medicine",
+                       `6` = "Surgery"),
+         gender = recode(gender,
+                         `1` = "male",
+                         `0` = "female"),
+         clin = recode(clin,
+                       `1` = "Primarily clinical emphasis",
+                       `0` = "Primarily research emphasis"),
+         cert = recode(cert,
+                       `1` = "Board certified", 
+                       `0` = "not certified"),
+         rank = recode(rank,
+                       `1`= "Assistant", 
+                       `2`= "Associate", 
+                       `3`= "Full professor")) %>%
+  select(-id)
+
+```
+
+
+## make table 1
+```{r}
+control <- arsenal::tableby.control(test = F,
+                                    numeric.stats = c("meansd","medianq1q3","range"),
+                                    ordered.stats = c("Nmiss"),
+                                    digits = 2)
+tbl <- arsenal::tableby( gender ~ ., data = data, control = control)
+
+summary(tbl,text = T) %>%
+  knitr::kable(booktabs = T, caption = "Descriptive Statistics") %>%
+  kable_styling(latex_options = c("striped", "hold_position")) 
+# remeber to add title!
+```
+
+# data cleaning for modeling
+## use sal94 as the outcome
+```{r}
+data = read_csv("Lawsuit.csv") %>%janitor::clean_names() %>%
+  mutate( dept = factor(dept),
+        gender = factor(gender),
+         clin = factor(clin),
+         cert = factor(cert),
+         rank = factor(rank)) %>%
+ # mutate(dept = recode(dept,
+ #                      `1` = "Biochemistry/Molecular Biology",
+ #                      `2` = "Physiology",
+ #                      `3` = "Genetics",
+ #                      `4` = "rankPediatrics",
+ #                      `5` = "Medicine",
+ #                      `6` = "Surgery"),
+ #        gender = recode(gender,
+ #                        `1` = "male",
+ #                        `0` = "female"),
+ #        clin = recode(clin,
+ #                      `1` = "Primarily clinical emphasis",
+ #                      `0` = "Primarily research emphasis"),
+ #        cert = recode(cert,
+ #                      `1` = "Board certified", 
+ #                      `0` = "not certified"),
+ #        rank = recode(rank,
+ #                      `1`= "Assistant", 
+ #                      `2`= "Associate", 
+ #                      `3`= "Full professor")) %>%
+  select(gender,everything())  %>%
+  select(-id, -sal95) %>%
+  mutate(sal94 = log(sal94))
+
+
+```
+
+
+```{r}
+# fit
+attach(data)
+#based model
+fit.base = lm(sal94 ~ gender)
+summary(fit.base) #0.38624
+
+# see if there is any confounder
+output_model = vector()
+output_add_var = vector()
+
+for (i in 2:7 ) {
+  var = names(data)[i] # ensure correct var names
+  formula = as.formula(str_c("sal94 ~ gender +", var))
+  print(str_c("sal94 ~ gender +", var))
+  output_model = append(output_model, str_c("sal94 ~ gender +", var))
+  output_add_var = append(output_add_var, var)
+  }
+
+confounder_check = tibble(model = output_model,
+                             add_var = output_add_var)
+
+regression = function(formula){
+  formula = as.formula(formula)
+  fit = lm(formula , data = data)
+  return(as.tibble(broom::tidy(fit)))
+}
+
+confounder_check = 
+  confounder_check %>%
+  mutate(reg = map(confounder_check$model,regression)) %>%
+  unnest() %>%
+  filter(p.value < .05) %>%
+  filter(term == "gender1") %>%
+  mutate(confounder = ifelse(abs((estimate - 0.38624)/0.38624) > 0.1, "confounder","not confounder" ))
+# rank is not a confounder
+
+#
+summary(lm(sal94 ~ gender + dept + clin + cert + prate +exper, data = data))
+
+# all other variables are confounders and should be adjusted. Next, let's test the interaction effect between gender and other factors.
+
+
+```
+
+
+```{r}
+# test interaction between gender and other varibales
+output_model = vector()
+output_add_var = vector()
+
+for (i in 2:6 ) {
+  var = names(data)[i] # ensure correct var names
+  formula = as.formula(str_c("sal94 ~ gender + dept + clin + cert + prate + exper +","gender*", var))
+  print(str_c("sal94 ~ gender + dept + clin + cert + prate +exper + gender *", var))
+  output_model = append(output_model, str_c("sal94 ~ gender + dept + clin + cert + prate +exper + gender *", var))
+  output_add_var = append(output_add_var, var)
+}
+
+inter_check = 
+  tibble(model = output_model,
+       inter_with = output_add_var) %>%
+  mutate(reg = map(model,regression)) %>%
+  unnest() %>%
+  filter(p.value < .05) # clin , exper are interaction terms that should be included
+
+
+summary(lm(sal94 ~ gender + dept + clin + cert + prate + exper + gender * clin + gender * exper , data = data))
+
+interact.fit_1 = lm(sal94 ~ gender + dept + clin + cert + exper + gender * clin + gender * exper , data = data)
+summary(interact.fit_1)
+interact.fit_2 = lm(sal94 ~ gender + dept + clin + cert + prate + exper + gender * clin + gender * exper , data = data)
+summary(interact.fit_2)
+
+anova(interact.fit_1,interact.fit_2) # anova shows that smaller model(only without prate) is better  (interact.fit_1)
+# however, prate is a confounder, we still should include that variable 
+#the resulting model is as below:
+summary(interact.fit_2)
+```
+
+The resulting model is:
+$$Ln(sal94)  = 10.99 + \mbox{0.28gender1 -0.143dept2 + 0.19dept3 + 0.15dept4 + 0.49dept5 + 0.21clin1 + 0.185cert1 + 0.04exper - 0.120gender1 * clin1 -0.018 gender1 * exper}$$
+
+# Diagnostic
+
+## leverage values, outliers, influential points
+
+```{r}
+par(mfrow = c(2,2))
+plot(interact.fit_2)
+```
+
+The residuals follow normal distribution and have constant variance. Using Cook's distance, we find that the 184th observation might be an influential point.
+
+
+```{r}
+# outliers in Y
+std_resid = rstandard(interact.fit_2)
+y_outliers = std_resid[abs(std_resid > 2.5)] # 2 outliers
+
+# outliers in X
+influential_points = as.data.frame(influence.measures(interact.fit_2)[[1]]) %>%
+  mutate(id = c(1:261)) %>%
+  select(id,everything())
+nrow(influential_points %>% filter(hat > 0.5)) # 0 leverage values
+
+# influencial points - dffit 
+influential_points %>% filter(dffit > 1) #row 184 -> influential point
+influential_points %>% filter(dffit > 2*sqrt(12/261)) # 8,73,101,182, 184, 239 influential point
+
+# influencial points - cook's distance
+influential_points %>% filter(cook.d > 12/261) # row 184 -> influential point
+```
+# Colinearity
+```{r}
+library(corrplot)
+library(HH)
+data %>%
+  select(5,6,8) %>%
+  cor() %>%
+  corrplot.mixed(upper = "ellipse")
+vif(interact.fit_2)
+```
+`prate` has a high VIF, indicating a high multicolinearity. However, it is used as a control variable of the model. Such a high VIF is not a problem and can be safely ignored. （https://statisticalhorizons.com/multicollinearity）
+
+# stratified models
+In the `model_94`,we have 5 confounders: `dept`, `clin`, `cert`, `prate`, `exper`.
+
+```{r}
+data_dept1 = data%>%
+  filter(dept == "1") 
+lm(sal94 ~ gender + dept + clin + cert + prate + exper + gender * clin + gender * exper, data_dept1)
+```
+
+## stratified by `dept`, `clin`, `cert`:
+
+```{r}
+#dept :1 ~ 6
+dept_stratify = function(i){
+  data_dept = data %>%
+    filter(dept == as.character(i))
+  summary(lm(sal94 ~ gender  + clin + cert + prate + exper + gender * clin + gender * exper, data_dept))
+}
+dept_stratify(1)
+dept_stratify(2)
+dept_stratify(3)
+dept_stratify(4)
+dept_stratify(5)
+dept_stratify(6)
+
+
+# cert 0, 1
+cert_stratify = function(i){
+  data_cert = data %>%
+    filter(cert == as.character(i))
+  summary(lm(sal94 ~ gender  + dept + clin + prate + exper + gender * clin + gender * exper, data_cert))
+}
+
+cert_stratify(0)
+cert_stratify(1)
+
+# clin: 0, 1
+clin_stratify = function(i){
+  data_clin = data %>%
+    filter(clin == as.character(i))
+  summary(lm(sal94 ~ gender  + dept + cert + prate + exper + gender * exper, data_clin))
+}
+
+clin_stratify(0)
+clin_stratify(1)
+
+```
+
+
+
