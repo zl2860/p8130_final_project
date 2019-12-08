@@ -1,0 +1,208 @@
+---
+title: "Final Project"
+author: "Clement Mugenzi"
+date: "12/6/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(MASS)
+library(dplyr)
+library(tidyverse)
+library(knitr)
+library(broom)
+library(faraway)
+library(arsenal)
+library(caret)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "right"))
+```
+
+# Methods
+
+## Data Description and Statistical Methods
+
+* Dept: Academic departments at Houston College of medicine. Biochemistry, Physiology, Genetics, Pediatrics, Medicine, and Surgery
+* Gender: A dichotomous variable coded with dummy variables '1' for Male subjects and '0' for Female subjects
+* Clin: A dummy variable with 1 = Primarily clinnical emphasis and 0 = Primarily research emphasis.
+* Cert: 1 = Board certified and 0 = not certified
+* Prate: Publication rate 
+* Exper: years of experience since obtaining Medical Doctor degree.
+* Rank: 1 = Assistant professor, 2 = Associate professor, 3 = full professor
+* Sal94: Salary in academic year 1994
+* Sal05: Salary in academic year 1995.
+
+The goal of this project is to investigate if claims made by a university's professor that there is gender discrimination when it comes to salary are true by building different multiple regression models and selecting the best and optimized model.
+
+# Loading and cleaning the dataset
+
+```{r, include=TRUE, message = FALSE, warning = FALSE}
+lawsuit_df =
+  read_csv("Lawsuit.csv") %>% 
+  janitor::clean_names() %>%
+  dplyr::mutate(
+    dept = factor(dept, levels = c("1", "2", "3",
+                                   "4", "5", "6")),
+    gender = factor(gender, levels = c("1", "0")),
+    clin = factor(clin, levels = c("1", "0")),
+    cert = factor(cert, levels = c("1", "0")),
+    rank = factor(rank, levels = c("1", "2", "3"))) %>% 
+  mutate(
+    gender = recode(gender, "1" = "Male", "0" = "Female"),
+    dept = recode(dept, "1" = "Biochemistry", "2" = "Physiology", "3" = "Genetics",
+                  "4" = "Pediatrics", "5" = "Medicine", "6" = "Surgery"),
+    clin = recode(clin, "1" = "clinical", "0" = "research"),
+    cert = recode(cert, "1" = "certified", "0" = "Not certified"),
+    rank = recode(rank, "1" = "assistant", "2" = "associate", "3" = "full")) %>%
+  arrange(gender)
+```
+
+**Descriptive Statistics:**
+
+```{r, results='asis', include=TRUE, message = FALSE, warning = FALSE}
+# Cleaning output
+tab1_controls = tableby.control(
+               total = T,
+               test = F,
+               numeric.stats = c("meansd", "medianq1q3", "range"),
+               cat.stats = "countpct",
+               stats.labels = list(
+               meansd = "Mean (SD)",
+               medianq1q3 = "Median (Q1, Q3)",
+               range = "Min - Max",
+               countpct = "N (%)"))
+
+tab1 = tableby(gender ~ dept + clin + cert + prate +
+                  exper + rank + sal94 + sal95,
+                data = lawsuit_df, control = tab1_controls)
+summary(tab1, title = 'Descriptive Statistics', digits = 2, text = T)
+```
+
+**Exploring the distribution of the response variable:**
+
+Let's first look at the distribution of salaries in the year 1994:
+
+```{r}
+lawsuit_df %>% 
+  ggplot(aes(x = sal94)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Untransformed Salary (1994)")
+```
+
+The salary histogram in the year 1994 exhibits right skewness which means I will try a different transformation.
+
+**Log-Transformation of 1994 salary and its distribution:**
+
+```{r}
+lawsuit_df = 
+  lawsuit_df %>% 
+  mutate(log_sal94 = log(sal94))
+
+lawsuit_df %>% 
+  ggplot(aes(x = log_sal94)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Log_Transformed Salary (1994)")
+```
+
+
+Second, let's look at the distribution of salaries in the year 1995:
+
+```{r}
+lawsuit_df %>% 
+  ggplot(aes(x = sal95)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Untransformed Salary (1995)")
+```
+
+This histogram also seem to exhibit right skewness, therefore it is worth transforming.
+
+**Log-Transformation of 1994 salary and its distribution:**
+
+```{r}
+lawsuit_df = 
+  lawsuit_df %>% 
+  mutate(log_sal95 = log(sal95))
+
+lawsuit_df %>%
+  ggplot(aes(x = log_sal95)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Log_Transformed Salary (1995)")
+```
+
+
+
+let's try looking at scatter plot to identify linearity between covariates and covariate-response relationships.
+
+```{r}
+lawsuit_df %>% 
+  select(-c(id, sal94, sal95)) %>% 
+  pairs(gap = 0)
+```
+
+Based on the above scatterplot matrix, the use of the MLR is justified due to the linear trend in the graphs of both salaries (1994 and 1995) against department, Publication rates, years of experience. Let's now investigate the correlation of continuous predictors in the matrix below. 
+
+```{r}
+lawsuit_df %>% 
+  dplyr::select(prate, exper, log_sal94, log_sal95) %>% 
+  cor() %>% kable()
+```
+
+The correlation matrix does not indicate strong correlation between continuous variables except for the high correlation between both salaries (1994 and 1995)
+
+
+**Interaction terms in the model:**
+
+```{r}
+mlr_int = lm(log_sal94 ~ rank * gender, data = lawsuit_df)
+summary(mlr_int)
+```
+
+
+
+
+
+**Interactions: Graphical**
+
+
+```{r}
+lawsuit_df %>% 
+  ggplot(aes(x = exper, y = log_sal94, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lawsuit_df %>% 
+  ggplot(aes(x = prate, y = log_sal94, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+
+
+
+
+
+## Model Building
+
+```{r}
+mlr_94 = lm(log_sal94 ~ dept + clin + cert +
+                  exper + rank, data = lawsuit_df)
+summary(mlr_94)
+```
