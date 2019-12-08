@@ -1,0 +1,158 @@
+---
+title: "Untitled"
+author: "Zongchao Liu"
+date: "12/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+data = read_csv("Lawsuit.csv") %>%
+  janitor::clean_names() %>%
+  mutate( dept = factor(dept),
+        gender = factor(gender),
+         clin = factor(clin),
+         cert = factor(cert),
+         rank = factor(rank)) %>%
+ # mutate(dept = recode(dept,
+ #                      `1` = "Biochemistry/Molecular Biology",
+ #                      `2` = "Physiology",
+ #                      `3` = "Genetics",
+ #                      `4` = "rankPediatrics",
+ #                      `5` = "Medicine",
+ #                      `6` = "Surgery"),
+ #        gender = recode(gender,
+ #                        `1` = "male",
+ #                        `0` = "female"),
+ #        clin = recode(clin,
+ #                      `1` = "Primarily clinical emphasis",
+ #                      `0` = "Primarily research emphasis"),
+ #        cert = recode(cert,
+ #                      `1` = "Board certified", 
+ #                      `0` = "not certified"),
+ #        rank = recode(rank,
+ #                      `1`= "Assistant", 
+ #                      `2`= "Associate", 
+ #                      `3`= "Full professor")) %>%
+  select(gender,everything())  %>%
+  select(-id) %>%
+  mutate(sal_increment = log(sal95 - sal94)) %>%
+  select(-sal94, -sal95)
+```
+
+```{r}
+# fit
+attach(data)
+#based model
+fit.base = lm(sal_increment ~ gender)
+summary(fit.base) # 0.36527
+
+# see if there is any confounder
+output_model = vector()
+output_add_var = vector()
+
+for (i in 2:7 ) {
+  var = names(data)[i] # ensure correct var names
+  formula = as.formula(str_c("sal_increment ~ gender +", var))
+  print(str_c("sal_increment ~ gender +", var))
+  output_model = append(output_model, str_c("sal_increment ~ gender +", var))
+  output_add_var = append(output_add_var, var)
+  }
+
+confounder_check = tibble(model = output_model,
+                             add_var = output_add_var)
+
+regression = function(formula){
+  formula = as.formula(formula)
+  fit = lm(formula , data = data)
+  return(as_tibble(broom::tidy(fit)))
+}
+
+confounder_check = 
+  confounder_check %>%
+  mutate(reg = map(confounder_check$model,regression)) %>%
+  unnest() %>%
+  filter(p.value < .05) %>%
+  filter(term == "gender1") %>%
+  mutate(confounder = ifelse(abs((estimate - 0.36527)/0.36527) > 0.1, "confounder","not confounder" ))
+
+# results shows that all the other variables are confounders
+
+
+# build the basic model that adjusts all the confounders
+summary(lm(sal_increment ~ gender + dept + clin + cert + prate +exper + rank, data = data))
+summary(lm(sal_increment ~ gender + dept + clin + cert + exper + rank, data = data)) # a better choice
+
+```
+
+```{r}
+# test interaction between gender and other varibales
+output_model = vector()
+output_add_var = vector()
+
+data = data[-5] # drop `prate`
+
+for (i in 2:6 ) {
+  var = names(data)[i] # ensure correct var names
+  formula = as.formula(str_c("sal_increment ~ gender + dept + clin + cert + exper + rank","gender*", var))
+  print(str_c("sal_increment ~ gender + dept + clin + cert +exper + rank + gender *", var))
+  output_model = append(output_model, str_c("sal_increment ~ gender + dept + clin + cert +exper + rank + gender *", var))
+  output_add_var = append(output_add_var, var)
+}
+
+inter_check = 
+  tibble(model = output_model,
+       inter_with = output_add_var) %>%
+  mutate(reg = map(model,regression)) %>%
+  unnest() %>%
+  filter(p.value < .05) #  no significant interaction terms
+
+# the resulting model is :
+fit.increment = lm(sal_increment ~ gender + dept + clin + cert + exper + rank , data = data)
+summary(fit.increment)
+
+```
+
+# Diagnostic
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit.increment)
+```
+
+The residuals follow normal distribution and have constant variance. Using Cook's distance, we find that the 184th observation might be an influential point.
+
+
+```{r}
+# outliers in Y
+std_resid = rstandard(fit.increment)
+y_outliers = std_resid[abs(std_resid > 2.5)] # 1 outliers
+
+# outliers in X
+influential_points = as.data.frame(influence.measures(fit.increment)[[1]]) %>%
+  mutate(id = c(1:261)) %>%
+  select(id,everything())
+nrow(influential_points %>% filter(hat > 0.5)) # 0 leverage values
+
+# influencial points - dffit 
+influential_points %>% filter(dffit > 1) #row 184 -> influential point
+influential_points %>% filter(dffit > 2*sqrt(12/261)) # 184,61 influential point
+
+# influencial points - cook's distance
+influential_points %>% filter(cook.d > .5) # 0 influential points
+```
+
+# colinearity
+```{r}
+library(corrplot)
+library(HH)
+vif(fit.increment)
+```
+
+
+# no stratified models
+# explain the fitted model
