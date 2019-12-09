@@ -138,6 +138,8 @@ lawsuit_df =
   lawsuit_df %>% 
   mutate(log_sal95 = log(sal95))
 
+write.csv(lawsuit_df, "lawsuit_df.csv")
+
 lawsuit_df %>%
   ggplot(aes(x = log_sal95)) + 
   geom_histogram(fill = "gray50") +
@@ -166,18 +168,47 @@ lawsuit_df %>%
 The correlation matrix does not indicate strong correlation between continuous variables except for the high correlation between both salaries (1994 and 1995)
 
 
-**Interaction terms in the model:**
+
+## Model Building and checking for interactions
+
+**Interactions: Graphical**
+
+We will check possible interaction existing between the gender variable and other predictor veriable since we are mainly interested in the relationship between gender and the 1994 salary.
+
 
 ```{r}
-mlr_int = lm(log_sal94 ~ rank * gender, data = lawsuit_df)
+mlr_94 = lm(log_sal94 ~ gender, data = lawsuit_df)
+summary(mlr_94)
+```
+
+Let us include the interaction term in the model. The gender variable was tested against the rest of the categorical variables (department, clin, cert, prate, exper, and rank). 
+
+The estimated regression equation that includes the interaction term is given by:
+
+$$\hat{Y}=\hat\beta_1X_{gender}+\hat\beta_2X_{rank}+\hat\beta_3X_{gender}*X_{rank}+\hat\beta_0$$
+
+**Hypothesis Testing:**
+
+$$H_0:\hat\beta_3=0$$
+$$H_1:\hat\beta_3\ne0$$
+
+
+```{r}
+mlr_int = lm(log_sal94 ~ gender * rank, data = lawsuit_df)
 summary(mlr_int)
 ```
 
+All but rank was found to be an effect modifier of the relationship between gender and the 1994 salary. Specifically, we found that female subjects with titles *"Full Professor"* were an effect modifier in the relationship between gender and the 1994 salary.
 
 
 
 
-**Interactions: Graphical**
+
+
+
+
+
+using graphical representation, we examined the relationship between the gender variable with both publication rate and years of experience and found no interaction as seen in the parallel lines generated in both graphs.
 
 
 ```{r}
@@ -187,6 +218,9 @@ lawsuit_df %>%
   geom_smooth(method = "lm", se = FALSE)
 ```
 
+With a graphical display, it is evident that gender is not an effect modifier in the relationship between years of experience and the 1994 salary.
+
+
 ```{r}
 lawsuit_df %>% 
   ggplot(aes(x = prate, y = log_sal94, color = gender)) +
@@ -194,15 +228,12 @@ lawsuit_df %>%
   geom_smooth(method = "lm", se = FALSE)
 ```
 
+Again with a graphical display, it is evident that gender is not an effect modifier in the relationship between the rate of publishing research papers and the 1994 salary.
 
-
-
-
-
-## Model Building
+**The Best Model Possible:**
 
 ```{r}
-mlr_94 = lm(log_sal94 ~ dept + clin + cert +
-                  exper + rank, data = lawsuit_df)
-summary(mlr_94)
+ult_mod = lm(log_sal94 ~ dept + exper + clin + cert + rank
+             , data = lawsuit_df)
+summary(ult_mod)
 ```

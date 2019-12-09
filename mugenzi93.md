@@ -170,6 +170,8 @@ lawsuit_df =
   lawsuit_df %>% 
   mutate(log_sal95 = log(sal95))
 
+write.csv(lawsuit_df, "lawsuit_df.csv")
+
 lawsuit_df %>%
   ggplot(aes(x = log_sal95)) + 
   geom_histogram(fill = "gray50") +
@@ -215,16 +217,60 @@ The correlation matrix does not indicate strong correlation between
 continuous variables except for the high correlation between both
 salaries (1994 and 1995)
 
-**Interaction terms in the model:**
+## Model Building and checking for interactions
+
+**Interactions: Graphical**
+
+We will check possible interaction existing between the gender variable
+and other predictor veriable since we are mainly interested in the
+relationship between gender and the 1994 salary.
 
 ``` r
-mlr_int = lm(log_sal94 ~ rank * gender, data = lawsuit_df)
+mlr_94 = lm(log_sal94 ~ gender, data = lawsuit_df)
+summary(mlr_94)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = log_sal94 ~ gender, data = lawsuit_df)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.13519 -0.36436 -0.00331  0.33580  1.05381 
+    ## 
+    ## Coefficients:
+    ##              Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  11.97055    0.03793 315.557  < 2e-16 ***
+    ## genderFemale -0.38624    0.05953  -6.489 4.38e-10 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.4723 on 259 degrees of freedom
+    ## Multiple R-squared:  0.1398, Adjusted R-squared:  0.1365 
+    ## F-statistic:  42.1 on 1 and 259 DF,  p-value: 4.378e-10
+
+Let us include the interaction term in the model. The gender variable
+was tested against the rest of the categorical variables (department,
+clin, cert, prate, exper, and rank).
+
+The estimated regression equation that includes the interaction term is
+given
+by:
+
+\[\hat{Y}=\hat\beta_1X_{gender}+\hat\beta_2X_{rank}+\hat\beta_3X_{gender}*X_{rank}+\hat\beta_0\]
+
+**Hypothesis Testing:**
+
+\[H_0:\hat\beta_3=0\] \[H_1:\hat\beta_3\ne0\]
+
+``` r
+mlr_int = lm(log_sal94 ~ gender * rank, data = lawsuit_df)
 summary(mlr_int)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = log_sal94 ~ rank * gender, data = lawsuit_df)
+    ## lm(formula = log_sal94 ~ gender * rank, data = lawsuit_df)
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
@@ -233,11 +279,11 @@ summary(mlr_int)
     ## Coefficients:
     ##                            Estimate Std. Error t value Pr(>|t|)    
     ## (Intercept)                12.02235    0.07103 169.265  < 2e-16 ***
+    ## genderFemale               -0.52052    0.09049  -5.752 2.52e-08 ***
     ## rankassociate              -0.14468    0.10045  -1.440   0.1510    
     ## rankfull                   -0.02620    0.09049  -0.290   0.7724    
-    ## genderFemale               -0.52052    0.09049  -5.752 2.52e-08 ***
-    ## rankassociate:genderFemale  0.27194    0.15350   1.772   0.0777 .  
-    ## rankfull:genderFemale       0.40560    0.15777   2.571   0.0107 *  
+    ## genderFemale:rankassociate  0.27194    0.15350   1.772   0.0777 .  
+    ## genderFemale:rankfull       0.40560    0.15777   2.571   0.0107 *  
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
@@ -245,7 +291,15 @@ summary(mlr_int)
     ## Multiple R-squared:  0.1764, Adjusted R-squared:  0.1602 
     ## F-statistic: 10.92 on 5 and 255 DF,  p-value: 1.551e-09
 
-**Interactions: Graphical**
+All but rank was found to be an effect modifier of the relationship
+between gender and the 1994 salary. Specifically, we found that female
+subjects with titles *“Full Professor”* were an effect modifier in the
+relationship between gender and the 1994 salary.
+
+using graphical representation, we examined the relationship between the
+gender variable with both publication rate and years of experience and
+found no interaction as seen in the parallel lines generated in both
+graphs.
 
 ``` r
 lawsuit_df %>% 
@@ -254,7 +308,11 @@ lawsuit_df %>%
   geom_smooth(method = "lm", se = FALSE)
 ```
 
-<img src="mugenzi93_files/figure-gfm/unnamed-chunk-10-1.png" width="90%" />
+<img src="mugenzi93_files/figure-gfm/unnamed-chunk-11-1.png" width="90%" />
+
+With a graphical display, it is evident that gender is not an effect
+modifier in the relationship between years of experience and the 1994
+salary.
 
 ``` r
 lawsuit_df %>% 
@@ -263,19 +321,23 @@ lawsuit_df %>%
   geom_smooth(method = "lm", se = FALSE)
 ```
 
-<img src="mugenzi93_files/figure-gfm/unnamed-chunk-11-1.png" width="90%" />
+<img src="mugenzi93_files/figure-gfm/unnamed-chunk-12-1.png" width="90%" />
 
-## Model Building
+Again with a graphical display, it is evident that gender is not an
+effect modifier in the relationship between the rate of publishing
+research papers and the 1994 salary.
+
+**The Best Model Possible:**
 
 ``` r
-mlr_94 = lm(log_sal94 ~ dept + clin + cert +
-                  exper + rank, data = lawsuit_df)
-summary(mlr_94)
+ult_mod = lm(log_sal94 ~ dept + exper + clin + cert + rank
+             , data = lawsuit_df)
+summary(ult_mod)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = log_sal94 ~ dept + clin + cert + exper + rank, data = lawsuit_df)
+    ## lm(formula = log_sal94 ~ dept + exper + clin + cert + rank, data = lawsuit_df)
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
@@ -289,9 +351,9 @@ summary(mlr_94)
     ## deptPediatrics     0.196076   0.035780   5.480 1.04e-07 ***
     ## deptMedicine       0.542815   0.029546  18.372  < 2e-16 ***
     ## deptSurgery        0.940948   0.035030  26.861  < 2e-16 ***
+    ## exper              0.018023   0.001802  10.000  < 2e-16 ***
     ## clinresearch      -0.204889   0.021976  -9.323  < 2e-16 ***
     ## certNot certified -0.192846   0.021322  -9.045  < 2e-16 ***
-    ## exper              0.018023   0.001802  10.000  < 2e-16 ***
     ## rankassociate      0.140061   0.023137   6.054 5.16e-09 ***
     ## rankfull           0.230151   0.025585   8.996  < 2e-16 ***
     ## ---
