@@ -25,10 +25,11 @@ that have been published claiming that female professors are getting
 paid less compared to their male colleagues while bearing the same, if
 not superior, titles and accolades.
 
-The aim of this study is to examine gender discrimination in setting
-salary within the Houston college of medicine where a female professor
-claimed, through a discrict court lawsuit, that there was evidence of
-discrimination against women in giving promotions and setting salaries.
+The aim of this study is to examine the association between gender
+discrimination in setting salary within the Houston college of medicine
+where a female professor claimed, through a discrict court lawsuit, that
+there was evidence of discrimination against women in giving promotions
+and setting salaries.
 
 # Methods
 
