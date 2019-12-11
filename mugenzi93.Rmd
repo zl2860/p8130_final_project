@@ -36,12 +36,12 @@ theme_set(theme_minimal() + theme(legend.position = "right"))
   
   The U.S education system is one area that is not immune to this income gap problem. Several factors determines ones compansation in the education system such as the area of expertise, years of experience, title, the amount of research papers published, etc. Despite these legitimate factors that determines compansation, there are many cases that have been published claiming that female professors are getting paid less compared to their male colleagues while bearing the same, if not superior, titles and accolades. 
   
-  The aim of this study is to examine the association between gender discrimination in setting salary within the Houston college of medicine where a female professor claimed, through a discrict court lawsuit, that there was evidence of discrimination against women in giving promotions and setting salaries.  
+  The aim of this study is to examine the association between gender discrimination in setting salary within the Houston college of medicine where a female professor claimed, through a district court lawsuit, that there was evidence of discrimination against women in giving promotions and setting salaries.  
   
 
 # Methods
 
-## Data Description and Statistical Methods
+## Data Description
 
 * Dept: Academic departments at Houston College of medicine. Biochemistry, Physiology, Genetics, Pediatrics, Medicine, and Surgery
 * Gender: A dichotomous variable coded with dummy variables '1' for Male subjects and '0' for Female subjects
@@ -145,14 +145,14 @@ p3 =
   ggplot(aes(x = log_sal94)) + 
   geom_histogram(fill = "gray50") +
   labs(
-    x = "Log_Transformed Salary (1994)")
+    x = "Log-Transformed Salary (1994)")
 
 p4 = 
   lawsuit_df %>%
   ggplot(aes(x = log_sal95)) + 
   geom_histogram(fill = "gray50") +
   labs(
-    x = "Log_Transformed Salary (1995)")
+    x = "Log-Transformed Salary (1995)")
 
 gridExtra::grid.arrange(p3, p4, ncol = 2)
 ```
@@ -176,18 +176,10 @@ lawsuit_df %>%
 The correlation matrix does not indicate strong correlation between continuous variables except for the high correlation between both salaries (1994 and 1995)
 
 
-
-## Model Building and checking for interactions
-
 **Interactions: Graphical**
 
 We will check possible interaction existing between the gender variable and other predictor veriable since we are mainly interested in the relationship between gender and the 1994 salary.
 
-
-```{r, message = FALSE, warning = FALSE, echo = FALSE}
-mlr_94 = lm(log_sal94 ~ gender, data = lawsuit_df)
-summary(mlr_94)
-```
 
 Let us include the interaction term in the model. The gender variable was tested against the rest of the categorical variables (department, clin, cert, prate, exper, and rank). 
 
@@ -209,6 +201,7 @@ lawsuit_df %>%
   geom_point() +
   geom_smooth(method = "lm", se = FALSE)
 ```
+
 
 With a graphical display, it is evident that gender is not an effect modifier in the relationship between years of experience and the 1994 salary.
 

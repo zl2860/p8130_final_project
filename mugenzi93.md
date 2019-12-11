@@ -28,13 +28,13 @@ not superior, titles and accolades.
 
 The aim of this study is to examine the association between gender
 discrimination in setting salary within the Houston college of medicine
-where a female professor claimed, through a discrict court lawsuit, that
+where a female professor claimed, through a district court lawsuit, that
 there was evidence of discrimination against women in giving promotions
 and setting salaries.
 
 # Methods
 
-## Data Description and Statistical Methods
+## Data Description
 
   - Dept: Academic departments at Houston College of medicine.
     Biochemistry, Physiology, Genetics, Pediatrics, Medicine, and
@@ -139,32 +139,11 @@ The correlation matrix does not indicate strong correlation between
 continuous variables except for the high correlation between both
 salaries (1994 and 1995)
 
-## Model Building and checking for interactions
-
 **Interactions: Graphical**
 
 We will check possible interaction existing between the gender variable
 and other predictor veriable since we are mainly interested in the
 relationship between gender and the 1994 salary.
-
-    ## 
-    ## Call:
-    ## lm(formula = log_sal94 ~ gender, data = lawsuit_df)
-    ## 
-    ## Residuals:
-    ##      Min       1Q   Median       3Q      Max 
-    ## -1.13519 -0.36436 -0.00331  0.33580  1.05381 
-    ## 
-    ## Coefficients:
-    ##              Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)  11.97055    0.03793 315.557  < 2e-16 ***
-    ## genderFemale -0.38624    0.05953  -6.489 4.38e-10 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 0.4723 on 259 degrees of freedom
-    ## Multiple R-squared:  0.1398, Adjusted R-squared:  0.1365 
-    ## F-statistic:  42.1 on 1 and 259 DF,  p-value: 4.378e-10
 
 Let us include the interaction term in the model. The gender variable
 was tested against the rest of the categorical variables (department,
@@ -215,13 +194,13 @@ gender variable with both publication rate and years of experience and
 found no interaction as seen in the parallel lines generated in both
 graphs.
 
-<img src="mugenzi93_files/figure-gfm/unnamed-chunk-9-1.png" width="90%" />
+<img src="mugenzi93_files/figure-gfm/unnamed-chunk-8-1.png" width="90%" />
 
 With a graphical display, it is evident that gender is not an effect
 modifier in the relationship between years of experience and the 1994
 salary.
 
-<img src="mugenzi93_files/figure-gfm/unnamed-chunk-10-1.png" width="90%" />
+<img src="mugenzi93_files/figure-gfm/unnamed-chunk-9-1.png" width="90%" />
 
 Again with a graphical display, it is evident that gender is not an
 effect modifier in the relationship between the rate of publishing
