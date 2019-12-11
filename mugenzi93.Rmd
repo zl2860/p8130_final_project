@@ -1,6 +1,6 @@
 ---
-title: "Final Project"
-author: "Clement Mugenzi"
+title: "Association between gender and salary setting in the University of Houston"
+author: "Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang"
 date: "12/6/2019"
 output: github_document
 ---
@@ -38,8 +38,6 @@ theme_set(theme_minimal() + theme(legend.position = "right"))
   
   The aim of this study is to examine the association between gender discrimination in setting salary within the Houston college of medicine where a female professor claimed, through a discrict court lawsuit, that there was evidence of discrimination against women in giving promotions and setting salaries.  
   
-  
-
 
 # Methods
 
@@ -52,14 +50,12 @@ theme_set(theme_minimal() + theme(legend.position = "right"))
 * Prate: Publication rate 
 * Exper: years of experience since obtaining Medical Doctor degree.
 * Rank: 1 = Assistant professor, 2 = Associate professor, 3 = full professor
-* Sal94: Salary in academic year 1994
+* Sal94: Salary in academic year 1994.
 * Sal05: Salary in academic year 1995.
 
-The goal of this project is to investigate if claims made by a university's professor that there is gender discrimination when it comes to salary are true by building different multiple regression models and selecting the best and optimized model.
+The *goal* of this project is to investigate if claims made by a Houston university professor that there is gender discrimination when it comes to salary are valid by building different multiple regression models that best captures the association between gender and salary.
 
-# Loading and cleaning the dataset
-
-```{r, include=TRUE, message = FALSE, warning = FALSE}
+```{r, include=TRUE, message = FALSE, warning = FALSE, echo=FALSE}
 lawsuit_df =
   read_csv("Lawsuit.csv") %>% 
   janitor::clean_names() %>%
@@ -72,17 +68,20 @@ lawsuit_df =
     rank = factor(rank, levels = c("1", "2", "3"))) %>% 
   mutate(
     gender = recode(gender, "1" = "Male", "0" = "Female"),
-    dept = recode(dept, "1" = "Biochemistry", "2" = "Physiology", "3" = "Genetics",
+    dept = recode(dept, "1" = "Biochemistry/Molecular Biology",
+                   "2" = "Physiology", "3" = "Genetics",
                   "4" = "Pediatrics", "5" = "Medicine", "6" = "Surgery"),
-    clin = recode(clin, "1" = "clinical", "0" = "research"),
-    cert = recode(cert, "1" = "certified", "0" = "Not certified"),
-    rank = recode(rank, "1" = "assistant", "2" = "associate", "3" = "full")) %>%
+    clin = recode(clin, "1" = "Clinical Emphasis", "0" = "Research Emphasis"),
+    cert = recode(cert, "1" = "Board certified", "0" = "Not certified"),
+    rank = recode(rank, "1" = "Assistant Professor", "2" = "Associate Professor", "3" = "Full Professor")) %>%
   arrange(gender)
 ```
 
 **Descriptive Statistics:**
 
-```{r, results='asis', include=TRUE, message = FALSE, warning = FALSE}
+Note that Values are weighted mean$\pm$SE for continuous variables or weighted %$\pm$SE for categorical variables.
+
+```{r, results='asis', include=TRUE, echo=FALSE, warning = FALSE}
 # Cleaning output
 tab1_controls = tableby.control(
                total = T,
@@ -98,71 +97,69 @@ tab1_controls = tableby.control(
 tab1 = tableby(gender ~ dept + clin + cert + prate +
                   exper + rank + sal94 + sal95,
                 data = lawsuit_df, control = tab1_controls)
-summary(tab1, title = 'Descriptive Statistics', digits = 2, text = T)
+summary(tab1, title = 'Baseline Professional characteristics of the study population, according to gender', digits = 2, text = T)
 ```
+
+ 
+
+
+
 
 **Exploring the distribution of the response variable:**
 
-Let's first look at the distribution of salaries in the year 1994:
+Let's first look at the distribution of both salaries of year 1994 and 1995:
 
-```{r}
-lawsuit_df %>% 
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 = 
+  lawsuit_df %>% 
   ggplot(aes(x = sal94)) + 
   geom_histogram(fill = "gray50") +
   labs(
     x = "Untransformed Salary (1994)")
-```
 
-The salary histogram in the year 1994 exhibits right skewness which means I will try a different transformation.
-
-**Log-Transformation of 1994 salary and its distribution:**
-
-```{r}
-lawsuit_df = 
+p2 = 
   lawsuit_df %>% 
-  mutate(log_sal94 = log(sal94))
-
-lawsuit_df %>% 
-  ggplot(aes(x = log_sal94)) + 
-  geom_histogram(fill = "gray50") +
-  labs(
-    x = "Log_Transformed Salary (1994)")
-```
-
-
-Second, let's look at the distribution of salaries in the year 1995:
-
-```{r}
-lawsuit_df %>% 
   ggplot(aes(x = sal95)) + 
   geom_histogram(fill = "gray50") +
   labs(
     x = "Untransformed Salary (1995)")
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
 ```
 
-This histogram also seem to exhibit right skewness, therefore it is worth transforming.
+Both distributions exhibit right skewness which means they need to undorgo a certain transformation.
 
-**Log-Transformation of 1994 salary and its distribution:**
+**Log-Transformation of 1994 and 1995 salaries and their distribution:**
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df = 
+  lawsuit_df %>% 
+  mutate(log_sal94 = log(sal94))
+
 lawsuit_df = 
   lawsuit_df %>% 
   mutate(log_sal95 = log(sal95))
 
-write.csv(lawsuit_df, "lawsuit_df.csv")
+p3 = 
+  lawsuit_df %>% 
+  ggplot(aes(x = log_sal94)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Log_Transformed Salary (1994)")
 
-lawsuit_df %>%
+p4 = 
+  lawsuit_df %>%
   ggplot(aes(x = log_sal95)) + 
   geom_histogram(fill = "gray50") +
   labs(
     x = "Log_Transformed Salary (1995)")
+
+gridExtra::grid.arrange(p3, p4, ncol = 2)
 ```
-
-
 
 let's try looking at scatter plot to identify linearity between covariates and covariate-response relationships.
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
 lawsuit_df %>% 
   select(-c(id, sal94, sal95)) %>% 
   pairs(gap = 0)
@@ -170,7 +167,7 @@ lawsuit_df %>%
 
 Based on the above scatterplot matrix, the use of the MLR is justified due to the linear trend in the graphs of both salaries (1994 and 1995) against department, Publication rates, years of experience. Let's now investigate the correlation of continuous predictors in the matrix below. 
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
 lawsuit_df %>% 
   dplyr::select(prate, exper, log_sal94, log_sal95) %>% 
   cor() %>% kable()
@@ -187,21 +184,12 @@ The correlation matrix does not indicate strong correlation between continuous v
 We will check possible interaction existing between the gender variable and other predictor veriable since we are mainly interested in the relationship between gender and the 1994 salary.
 
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
 mlr_94 = lm(log_sal94 ~ gender, data = lawsuit_df)
 summary(mlr_94)
 ```
 
 Let us include the interaction term in the model. The gender variable was tested against the rest of the categorical variables (department, clin, cert, prate, exper, and rank). 
-
-The estimated regression equation that includes the interaction term is given by:
-
-$$\hat{Y}=\hat\beta_1X_{gender}+\hat\beta_2X_{rank}+\hat\beta_3X_{gender}*X_{rank}+\hat\beta_0$$
-
-**Hypothesis Testing:**
-
-$$H_0:\hat\beta_3=0$$
-$$H_1:\hat\beta_3\ne0$$
 
 
 ```{r}
@@ -212,17 +200,10 @@ summary(mlr_int)
 All but rank was found to be an effect modifier of the relationship between gender and the 1994 salary. Specifically, we found that female subjects with titles *"Full Professor"* were an effect modifier in the relationship between gender and the 1994 salary.
 
 
-
-
-
-
-
-
-
 using graphical representation, we examined the relationship between the gender variable with both publication rate and years of experience and found no interaction as seen in the parallel lines generated in both graphs.
 
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
 lawsuit_df %>% 
   ggplot(aes(x = exper, y = log_sal94, color = gender)) +
   geom_point() +
@@ -232,7 +213,7 @@ lawsuit_df %>%
 With a graphical display, it is evident that gender is not an effect modifier in the relationship between years of experience and the 1994 salary.
 
 
-```{r}
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
 lawsuit_df %>% 
   ggplot(aes(x = prate, y = log_sal94, color = gender)) +
   geom_point() +
@@ -241,10 +222,24 @@ lawsuit_df %>%
 
 Again with a graphical display, it is evident that gender is not an effect modifier in the relationship between the rate of publishing research papers and the 1994 salary.
 
-**The Best Model Possible:**
 
-```{r}
-ult_mod = lm(log_sal94 ~ dept + exper + clin + cert + rank
-             , data = lawsuit_df)
-summary(ult_mod)
-```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
