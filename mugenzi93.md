@@ -1,5 +1,5 @@
-Association between gender and salary setting in the University of
-Houston
+Association between gender and salary setting at the Houstong College of
+Medicine
 ================
 Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang
 12/6/2019
@@ -8,14 +8,15 @@ Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang
 
 Title VII of the Civil Rights Act of 1964 is a federal law that
 prohibits employers from discriminating against employees on the basis
-of sex, race, color, national origin and religion. Also, the equal pay
-act of 1963 requires that men and women in the same workplace be given
-equal pay for equal work. Income inequality between men and women who do
-the same work have been a point of debate over the years and efforts
-have been made to ensure women receive the same remuneration as men for
-doing equal work. While there have been several studies conducted about
-the income gap between both gender, it is almost impossible to find a
-single study that focuses on one profession or industry.
+of sex, race, color, national origin and religion (1). Also, the equal
+pay act of 1963 requires that men and women in the same workplace be
+given equal pay for equal work. Income inequality between men and women
+who do the same work have been a point of debate over the years and
+efforts have been made to ensure women receive the same remuneration as
+men for doing equal work. While there have been several studies
+conducted about the income gap between both genders, it is almost
+impossible to find a single study that focuses on one profession or
+industry.
 
 The U.S education system is one area that is not immune to this income
 gap problem. Several factors determines ones compansation in the
@@ -24,13 +25,21 @@ title, the amount of research papers published, etc. Despite these
 legitimate factors that determines compansation, there are many cases
 that have been published claiming that female professors are getting
 paid less compared to their male colleagues while bearing the same, if
-not superior, titles and accolades.
+not superior, titles or accolades.
 
 The aim of this study is to examine the association between gender
 discrimination in setting salary within the Houston college of medicine
 where a female professor claimed, through a district court lawsuit, that
 there was evidence of discrimination against women in giving promotions
-and setting salaries.
+and setting salaries. To do this, we will build multiple regression
+models using seven predictor variables such as the department in which a
+subject belongs to, their area of expertise, whether or not they are
+board certified, their publication rate, years of experience, and their
+position title. We will test for interactions and confounders that might
+be present between all the stated predictors and our main predictor of
+interest which is the subject’s gender. Our response variable of
+interest will be both the baseline salary in year 1994 and the change in
+salary between year 1994 and year 1995.
 
 # Methods
 
@@ -205,3 +214,10 @@ salary.
 Again with a graphical display, it is evident that gender is not an
 effect modifier in the relationship between the rate of publishing
 research papers and the 1994 salary.
+
+## Statistical Methods
+
+# Reference
+
+**1.**
+[Here](https://www.aauw.org/what-we-do/legal-resources/know-your-rights-at-work/title-vii/)
