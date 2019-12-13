@@ -1,5 +1,5 @@
 ---
-title: "Association between gender and salary setting at the Houstong College of Medicine"
+title: "Association between gender and salary setting at the Houston College of Medicine"
 author: "Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang"
 date: "12/6/2019"
 output: github_document
@@ -36,7 +36,7 @@ theme_set(theme_minimal() + theme(legend.position = "right"))
   
   The U.S education system is one area that is not immune to this income gap problem. Several factors determines ones compansation in the education system such as the area of expertise, years of experience, title, the amount of research papers published, etc. Despite these legitimate factors that determines compansation, there are many cases that have been published claiming that female professors are getting paid less compared to their male colleagues while bearing the same, if not superior, titles or accolades. 
   
-  The aim of this study is to examine the association between gender discrimination in setting salary within the Houston college of medicine where a female professor claimed, through a district court lawsuit, that there was evidence of discrimination against women in giving promotions and setting salaries. To do this, we will build multiple regression models using seven predictor variables such as the department in which a subject belongs to, their area of expertise, whether or not they are board certified, their publication rate, years of experience, and their position title. We will test for interactions and confounders that might be present between all the stated predictors and our main predictor of interest which is the subject's gender. Our response variable of interest will be both the baseline salary in year 1994 and the change in salary between year 1994 and year 1995. 
+  The aim of this study is to examine the association between gender discrimination in setting salary within the Houston college of medicine where a female professor claimed, through a district court lawsuit, that there was evidence of discrimination against women in giving promotions and setting salaries. To do this, we will build multiple regression models using seven predictor variables such as the department in which a subject belongs to, their area of expertise, whether or not they are board certified, their publication rate, years of experience, and their position title. We will test for interactions and confounders that might be present between all the stated predictors and our main predictor of interest which is the subject's gender. Our response variable will be both the baseline salary in year 1994 and the change in salary between year 1994 and year 1995. 
   
 
 # Methods

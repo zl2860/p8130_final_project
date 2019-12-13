@@ -1,4 +1,4 @@
-Association between gender and salary setting at the Houstong College of
+Association between gender and salary setting at the Houston College of
 Medicine
 ================
 Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang
@@ -37,9 +37,9 @@ subject belongs to, their area of expertise, whether or not they are
 board certified, their publication rate, years of experience, and their
 position title. We will test for interactions and confounders that might
 be present between all the stated predictors and our main predictor of
-interest which is the subject’s gender. Our response variable of
-interest will be both the baseline salary in year 1994 and the change in
-salary between year 1994 and year 1995.
+interest which is the subject’s gender. Our response variable will be
+both the baseline salary in year 1994 and the change in salary between
+year 1994 and year 1995.
 
 # Methods
 
