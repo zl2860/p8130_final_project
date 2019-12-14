@@ -2,8 +2,7 @@
 title: "Association between gender and salary setting at the Houston College of Medicine"
 author: "Clement Mugenzi, Zongchao Liu, Shuya Liu, Yuao Yang"
 date: "12/6/2019"
-output:
-  word_document: default
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -15,8 +14,6 @@ library(broom)
 library(faraway)
 library(arsenal)
 library(caret)
-library(finalfit)
-library(knitr)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -81,7 +78,7 @@ lawsuit_df =
          "Certification" = "cert", "Publication" = "prate", 
          "Experience" = "exper", "Title" = "rank", "Salary (1994)" = "sal94",
          "Salary (1995)" = "sal95") %>% 
-  arrange(gender) %>% view()
+  arrange(gender)
 ```
 
 **Descriptive Statistics:**
@@ -100,7 +97,6 @@ tab1_controls = tableby.control(
                medianq1q3 = "Median (Q1, Q3)",
                range = "Min - Max",
                countpct = "N (%)"))
-
 tab1 = tableby(gender ~ Department + Emphasis + Certification + Publication +
                   Experience + Title + `Salary (1994)` + `Salary (1995)`,
                 data = lawsuit_df, control = tab1_controls)
@@ -118,10 +114,123 @@ load("table1.rda")
 ```
 
 
+
+
+**Exploring the distribution of the response variable:**
+
+Let's first look at the distribution of both salaries of year 1994 and 1995:
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 = 
+  lawsuit_df %>% 
+  ggplot(aes(x = `Salary (1994)`)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Untransformed Salary (1994)")
+p2 = 
+  lawsuit_df %>% 
+  ggplot(aes(`Salary (1995)`)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Untransformed Salary (1995)")
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+```
+
+Both distributions exhibit right skewness which means they need to undorgo a certain transformation.
+
+**Log-Transformation of 1994 and 1995 salaries and their distribution:**
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df = 
+  lawsuit_df %>% 
+  mutate(log_sal94 = log(`Salary (1994)`))
+lawsuit_df = 
+  lawsuit_df %>% 
+  mutate(log_sal95 = log(`Salary (1995)`))
+p3 = 
+  lawsuit_df %>% 
+  ggplot(aes(x = log_sal94)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Log-Transformed Salary (1994)")
+p4 = 
+  lawsuit_df %>%
+  ggplot(aes(x = log_sal95)) + 
+  geom_histogram(fill = "gray50") +
+  labs(
+    x = "Log-Transformed Salary (1995)")
+gridExtra::grid.arrange(p3, p4, ncol = 2)
+```
+
+let's try looking at scatter plot to identify linearity between covariates and covariate-response relationships.
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df %>% 
+  select(-c(id, `Salary (1994)`, `Salary (1995)`)) %>% 
+  pairs(gap = 0)
+```
+
+Based on the above scatterplot matrix, the use of the MLR is justified due to the linear trend in the graphs of both salaries (1994 and 1995) against department, Publication rates, years of experience. Let's now investigate the correlation of continuous predictors in the matrix below. 
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df %>% 
+  dplyr::select(Publication, Experience, log_sal94, log_sal95) %>% 
+  cor() %>% kable()
+```
+
+The correlation matrix does not indicate strong correlation between continuous variables except for the high correlation between both salaries (1994 and 1995)
+
+
+**Interactions: Graphical**
+
+We will check possible interaction existing between the gender variable and other predictor veriable since we are mainly interested in the relationship between gender and the 1994 salary.
+
+
+Let us include the interaction term in the model. The gender variable was tested against the rest of the categorical variables (department, clin, cert, prate, exper, and rank). 
+
+
+```{r}
+mlr_int = lm(log_sal94 ~ gender * Title, data = lawsuit_df)
+summary(mlr_int)
+```
+
+All but rank was found to be an effect modifier of the relationship between gender and the 1994 salary. Specifically, we found that female subjects with titles *"Full Professor"* were an effect modifier in the relationship between gender and the 1994 salary.
+
+
+using graphical representation, we examined the relationship between the gender variable with both publication rate and years of experience and found no interaction as seen in the parallel lines generated in both graphs.
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df %>% 
+  ggplot(aes(x = Experience, y = log_sal94, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+
+With a graphical display, it is evident that gender is not an effect modifier in the relationship between years of experience and the 1994 salary.
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+lawsuit_df %>% 
+  ggplot(aes(x = Publication, y = log_sal94, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+Again with a graphical display, it is evident that gender is not an effect modifier in the relationship between the rate of publishing research papers and the 1994 salary.
+
+
+## Statistical Methods
+
+
+
+
+
+
 # Reference
 
 **1.** [Here](https://www.aauw.org/what-we-do/legal-resources/know-your-rights-at-work/title-vii/)
-
 
 
 
